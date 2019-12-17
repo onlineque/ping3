@@ -6,6 +6,7 @@ import struct
 import select
 import time
 import threading
+import IN
 
 import errors
 from enums import ICMP_DEFAULT_CODE, IcmpType, IcmpTimeExceededCode, IcmpDestinationUnreachableCode
@@ -160,7 +161,7 @@ def receive_one_ping(sock: socket, icmp_id: int, seq: int, timeout: int) -> floa
                 return time_recv - time_sent
 
 
-def ping(dest_addr: str, timeout: int = 4, unit: str = "s", src_addr: str = None, ttl: int = 64, seq: int = 0, size: int = 56) -> float or None:
+def ping(dest_addr: str, timeout: int = 4, unit: str = "s", src_addr: str = None, ttl: int = 64, seq: int = 0, size: int = 56, df: bool = False) -> float or None:
     """
     Send one ping to destination address with the given timeout.
 
@@ -180,6 +181,10 @@ def ping(dest_addr: str, timeout: int = 4, unit: str = "s", src_addr: str = None
         PingError: Any PingError will raise again if `ping3.EXCEPTIONS` is True.
     """
     with socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP) as sock:
+        if df:
+            # set DO NOT FRAGMENT bit
+            sock.setsockopt(socket.SOL_IP, IN.IP_MTU_DISCOVER, IN.IP_PMTUDISC_DO)
+
         sock.setsockopt(socket.SOL_IP, socket.IP_TTL, ttl)
         if src_addr:
             sock.bind((src_addr, 0))  # only packets send to src_addr are received.
